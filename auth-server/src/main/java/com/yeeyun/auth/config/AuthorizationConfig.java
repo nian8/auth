@@ -1,5 +1,6 @@
 package com.yeeyun.auth.config;
 
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.JWKSource;
@@ -10,6 +11,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.lob.DefaultLobHandler;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
 import org.springframework.security.config.annotation.web.configurers.oauth2.server.authorization.OAuth2AuthorizationServerConfigurer;
@@ -17,8 +20,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.server.authorization.JdbcOAuth2AuthorizationConsentService;
+import org.springframework.security.oauth2.server.authorization.JdbcOAuth2AuthorizationService;
+import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsentService;
+import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.OAuth2TokenCustomizer;
-import org.springframework.security.oauth2.server.authorization.client.InMemoryRegisteredClientRepository;
+import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.ClientSettings;
@@ -68,7 +75,8 @@ public class AuthorizationConfig {
      * 创建客户端信息，可以保存在内存和数据库，此处保存在数据库中
      */
     @Bean
-    public RegisteredClientRepository registeredClientRepository(PasswordEncoder passwordEncoder) {
+    public RegisteredClientRepository registeredClientRepository(PasswordEncoder passwordEncoder,
+                                                                 JdbcTemplate jdbcTemplate) {
         RegisteredClient client = RegisteredClient
                 .withId(UUID.randomUUID().toString())
                 // 客户端id 需要唯一
@@ -110,7 +118,48 @@ public class AuthorizationConfig {
                         .reuseRefreshTokens(true)
                         .build())
                 .build();
-        return new InMemoryRegisteredClientRepository(client);
+        JdbcRegisteredClientRepository clientRepository = new JdbcRegisteredClientRepository(jdbcTemplate);
+        if (null == clientRepository.findByClientId("yee")) {
+            clientRepository.save(client);
+        }
+        return clientRepository;
+    }
+
+    /**
+     * 保存授权信息，授权服务器给我们颁发来token，那我们肯定需要保存吧，由这个服务来保存
+     */
+    @Bean
+    public OAuth2AuthorizationService authorizationService(JdbcTemplate jdbcTemplate,
+                                                           RegisteredClientRepository registeredClientRepository) {
+        JdbcOAuth2AuthorizationService authorizationService = new JdbcOAuth2AuthorizationService(jdbcTemplate, registeredClientRepository);
+
+        /**
+         * CustomOAuth2AuthorizationRowMapper
+         */
+        class CustomOAuth2AuthorizationRowMapper extends JdbcOAuth2AuthorizationService.OAuth2AuthorizationRowMapper {
+            public CustomOAuth2AuthorizationRowMapper(RegisteredClientRepository registeredClientRepository) {
+                super(registeredClientRepository);
+                getObjectMapper().configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+                this.setLobHandler(new DefaultLobHandler());
+            }
+        }
+
+        CustomOAuth2AuthorizationRowMapper oAuth2AuthorizationRowMapper =
+                new CustomOAuth2AuthorizationRowMapper(registeredClientRepository);
+
+        authorizationService.setAuthorizationRowMapper(oAuth2AuthorizationRowMapper);
+        return authorizationService;
+    }
+
+    /**
+     * 如果是授权码的流程，可能客户端申请了多个权限，
+     * 比如：获取用户信息，修改用户信息，
+     * 此Service处理的是用户给这个客户端哪些权限，比如只给获取用户信息的权限
+     */
+    @Bean
+    public OAuth2AuthorizationConsentService authorizationConsentService(JdbcTemplate jdbcTemplate,
+                                                                         RegisteredClientRepository registeredClientRepository) {
+        return new JdbcOAuth2AuthorizationConsentService(jdbcTemplate, registeredClientRepository);
     }
 
     /**
