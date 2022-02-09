@@ -6,8 +6,6 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
@@ -29,21 +27,16 @@ public class DefaultSecurityConfig {
         return http.build();
     }
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-
     /**
      * 此处创建用户: 张三
      *
      * @return
      */
     @Bean
-    UserDetailsService users(PasswordEncoder passwordEncoder) {
-        UserDetails user = User.builder()
-                .username("zhangsan")
-                .password(passwordEncoder.encode("zhangsan123"))
+    UserDetailsService users() {
+        UserDetails user = User.withDefaultPasswordEncoder()
+                .username("user1")
+                .password(("password"))
                 .roles("USER")
                 .build();
         return new InMemoryUserDetailsManager(user);

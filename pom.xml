@@ -4,17 +4,22 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.yeeyun</groupId>
     <artifactId>auth-framework</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.1</version>
     <packaging>pom</packaging>
     <name>auth-framework</name>
     <properties>
         <java.version>8</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <!---->
+        <spring-boot.version>2.6.3</spring-boot.version>
     </properties>
     <modules>
         <module>core</module>
         <module>auth-server</module>
+        <!---->
+        <module>samples/message-resource</module>
+        <module>samples/message-client</module>
     </modules>
     <build>
         <plugins>

@@ -6,20 +6,46 @@
         <groupId>com.yeeyun</groupId>
         <artifactId>auth-framework</artifactId>
         <version>0.0.1</version>
+        <relativePath/>
     </parent>
-    <artifactId>auth-core</artifactId>
+    <artifactId>samples-messages-resource</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>auth-core</name>
+    <name>samples-messages-resource</name>
     <packaging>jar</packaging>
     <properties>
         <java.version>8</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <!---->
+        <spring-boot.version>2.6.3</spring-boot.version>
     </properties>
     <dependencies>
         <!---->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+        </dependency>
         <!--test-->
     </dependencies>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
     <build>
         <plugins>
             <plugin>
